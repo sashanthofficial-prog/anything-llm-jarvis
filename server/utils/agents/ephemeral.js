@@ -558,12 +558,21 @@ class EphemeralAgentHandler extends AgentHandler {
       toolOverrides: null,
     }
   ) {
+    let reasoningEffort = null;
+    if (this.jarvisRoutingRoute === "reasoning") {
+      const { getLLMProvider } = require("../helpers");
+      const { resolveReasoningEffort } = require("../helpers/reasoningEffort");
+      reasoningEffort = await resolveReasoningEffort(
+        () => getLLMProvider({ provider: this.provider, model: this.model }),
+        "on"
+      );
+    }
+
     this.aibitat = new AIbitat({
       provider: this.provider ?? "openai",
       model: this.model ?? "gpt-5.6-luna",
       temperature: this.#workspace?.openAiTemp,
-      reasoningEffort:
-        this.jarvisRoutingRoute === "reasoning" ? "on" : null,
+      reasoningEffort,
       chats: await this.#chatHistory(20),
       handlerProps: {
         invocation: {
