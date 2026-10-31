@@ -259,15 +259,18 @@ async function chatSync({
       });
   }
 
-  const { connector: LLMConnector, routingMetadata, jarvisRoute } =
-    await resolveProviderConnector({
-      workspace,
-      prompt: message,
-      user,
-      thread,
-      attachments,
-      apiSessionId: sessionId,
-    });
+  const {
+    connector: LLMConnector,
+    routingMetadata,
+    jarvisRoute,
+  } = await resolveProviderConnector({
+    workspace,
+    prompt: message,
+    user,
+    thread,
+    attachments,
+    apiSessionId: sessionId,
+  });
   const reasoningEffort = await resolveReasoningEffort(
     LLMConnector,
     jarvisRoute === "reasoning" ? "on" : null
@@ -643,15 +646,18 @@ async function streamChat({
       });
   }
 
-  const { connector: LLMConnector, routingMetadata, jarvisRoute } =
-    await resolveProviderConnector({
-      workspace,
-      prompt: message,
-      user,
-      thread,
-      attachments,
-      apiSessionId: sessionId,
-    });
+  const {
+    connector: LLMConnector,
+    routingMetadata,
+    jarvisRoute,
+  } = await resolveProviderConnector({
+    workspace,
+    prompt: message,
+    user,
+    thread,
+    attachments,
+    apiSessionId: sessionId,
+  });
   const reasoningEffort = await resolveReasoningEffort(
     LLMConnector,
     jarvisRoute === "reasoning" ? "on" : null
