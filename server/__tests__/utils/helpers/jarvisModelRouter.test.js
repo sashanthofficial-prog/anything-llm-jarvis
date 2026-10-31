@@ -96,6 +96,19 @@ describe("JARVIS request-scoped model selection", () => {
     ).toBe("default");
   });
 
+  it("recognises image MIME types case-insensitively and ignores empty payloads", () => {
+    expect(
+      hasImageAttachment([
+        { mime: "IMAGE/PNG", contentString: "AAAA" },
+      ])
+    ).toBe(true);
+    expect(
+      hasImageAttachment([
+        { mime: "image/png", contentString: "" },
+      ])
+    ).toBe(false);
+  });
+
   it("supports custom reasoning and vision model preferences", () => {
     const env = {
       JARVIS_REASONING_MODEL_PREF: "custom/reasoning-model",
