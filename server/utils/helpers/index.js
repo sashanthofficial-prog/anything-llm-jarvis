@@ -767,6 +767,7 @@ async function resolveProviderConnector({
       }),
       routingMetadata: null,
       prefetchedContext: null,
+      jarvisRoute: selection.route,
     };
   }
 
@@ -811,6 +812,7 @@ async function resolveProviderConnector({
     connector: router.delegateProvider,
     routingMetadata: router.routingMetadata,
     prefetchedContext: ctx,
+    jarvisRoute: null,
   };
 }
 
