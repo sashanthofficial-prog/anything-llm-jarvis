@@ -489,7 +489,7 @@ class AgentHandler {
     return this.providerDefault();
   }
 
-  async #providerSetupAndCheck(prompt = null) {
+  async #providerSetupAndCheck(prompt = null, attachments = this.attachments) {
     this.provider = this.invocation.workspace.agentProvider ?? null; // set provider to workspace agent provider if it exists
     this.model = this.#fetchModel();
 
@@ -513,7 +513,7 @@ class AgentHandler {
         provider: this.provider,
         selectedModel: this.model,
         prompt: prompt || this.invocation.prompt || "",
-        attachments: this.attachments,
+        attachments: Array.isArray(attachments) ? attachments : this.attachments,
       });
       this.model = selection.model;
       this.jarvisRoutingRoute = selection.route;
@@ -965,7 +965,7 @@ class AgentHandler {
     // Skip the first invocation since the route was already resolved during init()
     // and re-resolving would cause shouldNotify to return false (route already recorded).
     let isFirstCall = true;
-    this.aibitat.resolveRoute = async (prompt) => {
+    this.aibitat.resolveRoute = async (prompt, attachments = []) => {
       if (isFirstCall) {
         isFirstCall = false;
         return {
@@ -982,7 +982,7 @@ class AgentHandler {
           })) ?? this.invocation.workspace;
         this.routingMetadata = null;
         this._modelRouter = null;
-        await this.#providerSetupAndCheck(prompt);
+        await this.#providerSetupAndCheck(prompt, attachments);
         if (this.provider !== provider || this.model !== model)
           this.log(
             `Route changed ${this.#invocationUUID}::${this.provider}:${this.model}`
