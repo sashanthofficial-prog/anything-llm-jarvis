@@ -512,7 +512,7 @@ class AgentHandler {
       const selection = selectJarvisModel({
         provider: this.provider,
         selectedModel: this.model,
-        prompt: prompt || this.invocation.prompt || "",
+        prompt: this.invocation.prompt || prompt || "",
         attachments: this.attachments,
       });
       this.model = selection.model;
