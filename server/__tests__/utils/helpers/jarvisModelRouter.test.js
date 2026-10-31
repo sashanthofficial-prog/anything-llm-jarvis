@@ -4,7 +4,7 @@ const {
   hasImageAttachment,
   isComplexPrompt,
   selectJarvisModel,
-} = require("../../../../utils/helpers/jarvisModelRouter");
+} = require("../../../utils/helpers/jarvisModelRouter");
 
 describe("JARVIS request-scoped model selection", () => {
   const base = {
