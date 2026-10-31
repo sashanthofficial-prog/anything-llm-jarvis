@@ -19,6 +19,7 @@ const { AgentHandler } = require(".");
 const {
   WorkspaceAgentInvocation,
 } = require("../../models/workspaceAgentInvocation");
+const { selectJarvisModel } = require("../helpers/jarvisModelRouter");
 
 /**
  * This is an instance and functional Agent handler, but it does not utilize
@@ -53,6 +54,7 @@ class EphemeralAgentHandler extends AgentHandler {
   provider = null;
   /** @type {string|null} the model to use for the agent */
   model = null;
+  jarvisRoutingRoute = "default";
 
   /**
    * @param {{
@@ -215,9 +217,33 @@ class EphemeralAgentHandler extends AgentHandler {
     this.provider = this.#workspace?.agentProvider ?? null;
     this.model = this.#fetchModel();
 
-    // If provider resolved to model router, resolve the actual provider/model
+    if (
+      this.provider === "lmstudio" &&
+      !this.#workspace?.agentModel &&
+      this.#workspace?.chatProvider === "lmstudio" &&
+      this.#workspace?.chatModel
+    ) {
+      this.model = this.#workspace.chatModel;
+    }
+
+    // Keep model-router workspaces on their existing routing implementation.
+    // All other LM Studio agent requests can use JARVIS request-scoped routing.
     if (this.provider === "anythingllm-router") {
       await this.#resolveRouterProvider();
+    } else {
+      const selection = selectJarvisModel({
+        provider: this.provider,
+        selectedModel: this.model,
+        prompt: this.#prompt || "",
+        attachments: this.#attachments,
+      });
+      this.model = selection.model;
+      this.jarvisRoutingRoute = selection.route;
+      if (selection.route !== "default") {
+        this.log(
+          `JARVIS ${selection.route} route: ${this.provider}:${this.model}`
+        );
+      }
     }
 
     if (!this.provider)
@@ -536,6 +562,8 @@ class EphemeralAgentHandler extends AgentHandler {
       provider: this.provider ?? "openai",
       model: this.model ?? "gpt-5.6-luna",
       temperature: this.#workspace?.openAiTemp,
+      reasoningEffort:
+        this.jarvisRoutingRoute === "reasoning" ? "on" : null,
       chats: await this.#chatHistory(20),
       handlerProps: {
         invocation: {
