@@ -132,5 +132,12 @@ describe("JARVIS request-scoped model selection", () => {
         env: { JARVIS_AUTO_ROUTING: "false" },
       }).route
     ).toBe("default");
+    expect(
+      selectJarvisModel({
+        ...base,
+        prompt: "Do a formal proof.",
+        env: { JARVIS_AUTO_ROUTING: "0" },
+      }).route
+    ).toBe("default");
   });
 });
