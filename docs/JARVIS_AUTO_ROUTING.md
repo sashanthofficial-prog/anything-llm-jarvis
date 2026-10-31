@@ -50,9 +50,11 @@ incorrectly; the test suite covers the expected basic cases.
 The same request-scoped selection is applied to LM Studio agent sessions. An
 explicit workspace agent model remains the agent's default model; otherwise,
 the workspace's selected LM Studio chat model is used as the agent default
-when available. Agent sessions re-check the current turn's prompt when they
-resolve a route, so a later complex prompt is not judged using only the first
-message. Image and reasoning routes are temporary for the invocation. The
+when available. Agent sessions re-check the current turn's prompt and its current
+attachments when they resolve a route. A later complex prompt is not judged
+using only the first message, and an image attached during a follow-up turn can
+select the vision model for that turn. A later text-only turn returns to the
+workspace's selected default. Image and reasoning routes are temporary. The
 existing AnythingLLM agent and skill interfaces are not replaced.
 
 The developer API's synchronous and streaming workspace-chat paths use the
@@ -90,7 +92,7 @@ Then test manually with LM Studio running:
 3. Attach an image and confirm the vision model appears in the logs/metrics.
 4. Send a normal text message after the image and confirm the manually selected
    workspace model is used again.
-5. Repeat the image and reasoning checks through an agent invocation, including a later turn with a different prompt.
+5. Through an Agent invocation, test an image on the first turn and on a later follow-up turn; then send text only and confirm it returns to the selected default.
 6. Check both synchronous and streaming developer API chat endpoints with a reasoning-triggering prompt.
 
 These checks must be run against a locally built server before treating the
