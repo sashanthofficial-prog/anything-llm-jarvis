@@ -513,7 +513,9 @@ class AgentHandler {
         provider: this.provider,
         selectedModel: this.model,
         prompt: prompt || this.invocation.prompt || "",
-        attachments: Array.isArray(attachments) ? attachments : this.attachments,
+        attachments: Array.isArray(attachments)
+          ? attachments
+          : this.attachments,
       });
       this.model = selection.model;
       this.jarvisRoutingRoute = selection.route;
