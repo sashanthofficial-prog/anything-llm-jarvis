@@ -5,6 +5,7 @@ const { getVectorDbClass, resolveProviderConnector } = require("../helpers");
 const { addChatCostToMetrics } = require("../helpers/modelPricing");
 const { writeResponseChunk } = require("../helpers/chat/responses");
 const { abortConnectorOnClientDisconnect } = require("../helpers/abortSignals");
+const { resolveReasoningEffort } = require("../helpers/reasoningEffort");
 const {
   chatPrompt,
   sourceIdentifier,
@@ -258,7 +259,7 @@ async function chatSync({
       });
   }
 
-  const { connector: LLMConnector, routingMetadata } =
+  const { connector: LLMConnector, routingMetadata, jarvisRoute } =
     await resolveProviderConnector({
       workspace,
       prompt: message,
@@ -267,6 +268,10 @@ async function chatSync({
       attachments,
       apiSessionId: sessionId,
     });
+  const reasoningEffort = await resolveReasoningEffort(
+    LLMConnector,
+    jarvisRoute === "reasoning" ? "on" : null
+  );
 
   const VectorDb = getVectorDbClass();
   const messageLimit = workspace?.openAiHistory || 20;
@@ -455,6 +460,7 @@ async function chatSync({
   const { textResponse, metrics: completionMetrics } =
     await LLMConnector.getChatCompletion(messages, {
       user: user,
+      reasoningEffort,
     });
   const performanceMetrics = addChatCostToMetrics(completionMetrics, {
     routingMetadata,
@@ -637,7 +643,7 @@ async function streamChat({
       });
   }
 
-  const { connector: LLMConnector, routingMetadata } =
+  const { connector: LLMConnector, routingMetadata, jarvisRoute } =
     await resolveProviderConnector({
       workspace,
       prompt: message,
@@ -646,6 +652,10 @@ async function streamChat({
       attachments,
       apiSessionId: sessionId,
     });
+  const reasoningEffort = await resolveReasoningEffort(
+    LLMConnector,
+    jarvisRoute === "reasoning" ? "on" : null
+  );
 
   // A disconnected client (aborted request, closed connection) should stop the
   // provider generating too, not just stop us reading the response.
@@ -852,6 +862,7 @@ async function streamChat({
     const { textResponse, metrics: performanceMetrics } =
       await LLMConnector.getChatCompletion(messages, {
         user: user,
+        reasoningEffort,
       });
     completeText = textResponse;
     metrics = addChatCostToMetrics(performanceMetrics, {
@@ -871,6 +882,7 @@ async function streamChat({
   } else {
     const stream = await LLMConnector.streamGetChatCompletion(messages, {
       user: user,
+      reasoningEffort,
     });
     completeText = await LLMConnector.handleStream(response, stream, { uuid });
     metrics = addChatCostToMetrics(stream.metrics, {
