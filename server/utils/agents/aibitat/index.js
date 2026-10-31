@@ -1638,4 +1638,5 @@ https://docs.anythingllm.com/agent/intelligent-tool-selection
 }
 
 module.exports = AIbitat;
-module.exports.getLatestUserMessageAttachments = getLatestUserMessageAttachments;
+module.exports.getLatestUserMessageAttachments =
+  getLatestUserMessageAttachments;
