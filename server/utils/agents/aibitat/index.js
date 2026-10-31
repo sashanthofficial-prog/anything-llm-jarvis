@@ -946,8 +946,14 @@ https://docs.anythingllm.com/agent/intelligent-tool-selection
     // Re-evaluate model router before each turn if a resolver is attached.
     // This ensures routing rules are applied per-message, not just at initialization.
     if (this.resolveRoute) {
+      const latestUserMessage = [...chatHistory]
+        .reverse()
+        .find((message) => message.role === "user");
       this.applyResolvedRoute(
-        await this.resolveRoute(userPrompt || route.content || "")
+        await this.resolveRoute(
+          userPrompt || route.content || "",
+          latestUserMessage?.attachments || []
+        )
       );
     }
 
