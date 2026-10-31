@@ -68,6 +68,7 @@ async function streamChatWithWorkspace(
     connector: LLMConnector,
     routingMetadata,
     prefetchedContext,
+    jarvisRoute,
     error: routerError,
   } = await resolveLLMConnector({
     workspace,
@@ -302,7 +303,7 @@ async function streamChatWithWorkspace(
 
   const reasoningEffort = await resolveReasoningEffort(
     LLMConnector,
-    sessionReasoningEffort
+    jarvisRoute === "reasoning" ? "on" : sessionReasoningEffort
   );
 
   // If streaming is not explicitly enabled for connector

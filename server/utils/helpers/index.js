@@ -740,14 +740,34 @@ async function resolveProviderConnector({
   const temperatureOverride = parseFloat(temperature) >= 0 ? temperature : null;
 
   if (effectiveProvider !== "anythingllm-router") {
+    const { selectJarvisModel } = require("./jarvisModelRouter");
+    const selectedModel =
+      workspace?.chatModel ||
+      (effectiveProvider === "lmstudio"
+        ? process.env.LMSTUDIO_MODEL_PREF
+        : null);
+    const selection = selectJarvisModel({
+      provider: effectiveProvider,
+      selectedModel,
+      prompt,
+      attachments,
+    });
+
+    if (selection.route !== "default") {
+      console.log(
+        `[JARVIS Router] ${selection.route} route: ${selection.model}`
+      );
+    }
+
     return {
       connector: getLLMProvider({
-        provider: workspace?.chatProvider,
-        model: workspace?.chatModel,
+        provider: workspace?.chatProvider || effectiveProvider,
+        model: selection.model,
         temperature: temperatureOverride ?? workspace?.openAiTemp,
       }),
       routingMetadata: null,
       prefetchedContext: null,
+      jarvisRoute: selection.route,
     };
   }
 
@@ -792,6 +812,7 @@ async function resolveProviderConnector({
     connector: router.delegateProvider,
     routingMetadata: router.routingMetadata,
     prefetchedContext: ctx,
+    jarvisRoute: null,
   };
 }
 

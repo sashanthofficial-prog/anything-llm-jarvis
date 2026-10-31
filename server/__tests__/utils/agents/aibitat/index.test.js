@@ -1,5 +1,42 @@
 const AIbitat = require("../../../../utils/agents/aibitat");
+const {
+  getLatestUserMessageAttachments,
+} = require("../../../../utils/agents/aibitat");
 const { MODEL_PRICING } = require("../../../../utils/helpers/modelPricing");
+
+describe("AIbitat latest user-turn attachments", () => {
+  test("returns attachments from the latest user message, not older turns", () => {
+    const previousImage = [{ mime: "image/png", contentString: "older-image" }];
+    const currentImage = [{ mime: "image/jpeg", contentString: "current-image" }];
+
+    expect(
+      getLatestUserMessageAttachments([
+        { role: "user", content: "First turn", attachments: previousImage },
+        { role: "assistant", content: "Previous response" },
+        { role: "user", content: "Second turn", attachments: currentImage },
+      ])
+    ).toBe(currentImage);
+  });
+
+  test("does not reuse an older image when the latest user turn has no attachments", () => {
+    expect(
+      getLatestUserMessageAttachments([
+        {
+          role: "user",
+          content: "Earlier image",
+          attachments: [{ mime: "image/png", contentString: "older-image" }],
+        },
+        { role: "assistant", content: "Response" },
+        { role: "user", content: "Text-only follow-up" },
+      ])
+    ).toEqual([]);
+  });
+
+  test("returns an empty list for invalid or empty history", () => {
+    expect(getLatestUserMessageAttachments()).toEqual([]);
+    expect(getLatestUserMessageAttachments(null)).toEqual([]);
+  });
+});
 
 describe("AIbitat.getProviderForConfig providerSlug wiring", () => {
   const originalOpenAiKey = process.env.OPEN_AI_KEY;

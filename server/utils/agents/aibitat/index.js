@@ -8,6 +8,22 @@ const { v4 } = require("uuid");
 const { ToolReranker } = require("./utils/toolReranker.js");
 
 /**
+ * Get attachments from the latest user message only. Older attachments remain
+ * in chat history for context, but must not trigger model routing on later turns.
+ * @param {Array<{role?: string, attachments?: Array}>} chatHistory
+ * @returns {Array}
+ */
+function getLatestUserMessageAttachments(chatHistory = []) {
+  if (!Array.isArray(chatHistory)) return [];
+  const latestUserMessage = [...chatHistory]
+    .reverse()
+    .find((message) => message?.role === "user");
+  return Array.isArray(latestUserMessage?.attachments)
+    ? latestUserMessage.attachments
+    : [];
+}
+
+/**
  * AIbitat is a class that manages the conversation between agents.
  * It is designed to solve a task with LLM.
  *
@@ -947,7 +963,10 @@ https://docs.anythingllm.com/agent/intelligent-tool-selection
     // This ensures routing rules are applied per-message, not just at initialization.
     if (this.resolveRoute) {
       this.applyResolvedRoute(
-        await this.resolveRoute(userPrompt || route.content || "")
+        await this.resolveRoute(
+          userPrompt || route.content || "",
+          getLatestUserMessageAttachments(chatHistory)
+        )
       );
     }
 
@@ -1619,3 +1638,5 @@ https://docs.anythingllm.com/agent/intelligent-tool-selection
 }
 
 module.exports = AIbitat;
+module.exports.getLatestUserMessageAttachments =
+  getLatestUserMessageAttachments;

@@ -25,6 +25,7 @@ const {
   usesModelRouter,
 } = require("../helpers/reasoningEffort");
 const { DocumentManager } = require("../DocumentManager");
+const { selectJarvisModel } = require("../helpers/jarvisModelRouter");
 
 class AgentHandler {
   #invocationUUID;
@@ -38,6 +39,7 @@ class AgentHandler {
   provider = null;
   model = null;
   attachments = [];
+  jarvisRoutingRoute = "default";
 
   constructor({ uuid }) {
     this.#invocationUUID = uuid;
@@ -487,13 +489,41 @@ class AgentHandler {
     return this.providerDefault();
   }
 
-  async #providerSetupAndCheck(prompt = null) {
+  async #providerSetupAndCheck(prompt = null, attachments = this.attachments) {
     this.provider = this.invocation.workspace.agentProvider ?? null; // set provider to workspace agent provider if it exists
     this.model = this.#fetchModel();
 
-    // If provider resolved to model router, resolve the actual provider/model
+    // Keep agent sessions aligned with the manually selected workspace model
+    // unless the workspace explicitly configured a separate agent model.
+    if (
+      this.provider === "lmstudio" &&
+      !this.invocation.workspace.agentModel &&
+      this.invocation.workspace.chatProvider === "lmstudio" &&
+      this.invocation.workspace.chatModel
+    ) {
+      this.model = this.invocation.workspace.chatModel;
+    }
+
+    // If provider resolved to model router, resolve the actual provider/model.
+    // Otherwise JARVIS may temporarily select a model for this agent invocation.
     if (this.provider === "anythingllm-router") {
       await this.#resolveRouterProvider(prompt);
+    } else {
+      const selection = selectJarvisModel({
+        provider: this.provider,
+        selectedModel: this.model,
+        prompt: prompt || this.invocation.prompt || "",
+        attachments: Array.isArray(attachments)
+          ? attachments
+          : this.attachments,
+      });
+      this.model = selection.model;
+      this.jarvisRoutingRoute = selection.route;
+      if (selection.route !== "default") {
+        this.log(
+          `JARVIS ${selection.route} route: ${this.provider}:${this.model}`
+        );
+      }
     }
 
     if (!this.provider)
@@ -787,15 +817,16 @@ class AgentHandler {
 
   async init() {
     await this.#validInvocation();
-    await this.#providerSetupAndCheck();
-    this.log(`Start ${this.#invocationUUID}::${this.provider}:${this.model}`);
 
-    // Retrieve cached attachments (images, etc.) from the HTTP request
+    // Retrieve attachments before model selection so image requests can route
+    // to the vision model during the initial provider setup.
     this.attachments = getAndClearInvocationAttachments(this.#invocationUUID);
     this.sessionReasoningEffort = getAndClearInvocationReasoningEffort(
       this.#invocationUUID
     );
 
+    await this.#providerSetupAndCheck();
+    this.log(`Start ${this.#invocationUUID}::${this.provider}:${this.model}`);
     return this;
   }
 
@@ -877,7 +908,9 @@ class AgentHandler {
     const { getLLMProvider } = require("../helpers");
     return await resolveReasoningEffort(
       () => getLLMProvider({ provider: this.provider, model: this.model }),
-      this.sessionReasoningEffort
+      this.jarvisRoutingRoute === "reasoning"
+        ? "on"
+        : this.sessionReasoningEffort
     );
   }
 
@@ -934,7 +967,7 @@ class AgentHandler {
     // Skip the first invocation since the route was already resolved during init()
     // and re-resolving would cause shouldNotify to return false (route already recorded).
     let isFirstCall = true;
-    this.aibitat.resolveRoute = async (prompt) => {
+    this.aibitat.resolveRoute = async (prompt, attachments = []) => {
       if (isFirstCall) {
         isFirstCall = false;
         return {
@@ -951,7 +984,7 @@ class AgentHandler {
           })) ?? this.invocation.workspace;
         this.routingMetadata = null;
         this._modelRouter = null;
-        await this.#providerSetupAndCheck(prompt);
+        await this.#providerSetupAndCheck(prompt, attachments);
         if (this.provider !== provider || this.model !== model)
           this.log(
             `Route changed ${this.#invocationUUID}::${this.provider}:${this.model}`
